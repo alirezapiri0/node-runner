@@ -65,19 +65,19 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: desktop
+          components: rustfmt
 
       - name: Formatting
         working-directory: desktop
         run: cargo fmt --all -- --check
 
-      - name: Clippy
-        working-directory: desktop
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      # Clippy is deliberately not run here. `--workspace` pulls in `src-tauri`,
+      # and compiling the Tauri crate on Linux means the whole GTK stack
+      # (glib-sys, webkit2gtk-sys, libsoup) that this application does not use and
+      # should not have installed: it is Windows-only by construction, from DPAPI
+      # down to WebView2. Linting it on ubuntu therefore fails in glib-sys's build
+      # script for a reason that says nothing about the code. It runs in the `app`
+      # job instead, on the toolchain that actually produces the binary.
 
       - name: Shell script linting
         uses: ludeeus/action-shellcheck@master
@@ -159,6 +159,17 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Build the frontend
+        # tauri-build resolves `frontendDist` at build time and refuses to embed a
+        # directory that does not exist yet, so the bundle is produced before
+        # anything that compiles the crate.
+        working-directory: desktop
+        run: npx vite build
+
+      - name: Clippy
+        working-directory: desktop
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
       - name: Build the application
         working-directory: desktop
         run: npm run tauri:build
@@ -167,10 +178,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          exe="desktop/src-tauri/target/release/node-runner.exe"
+          # `desktop/` is the Cargo workspace root, so the target directory is
+          # `desktop/target`, not `desktop/src-tauri/target`. Assuming the crate
+          # directory is a quiet trap: the build succeeds, and this gate then
+          # reports the binary as missing and skips the upload.
+          exe="desktop/target/release/node-runner.exe"
           if [ ! -f "$exe" ]; then
             echo "::error::expected $exe to exist after the build"
-            ls -l desktop/src-tauri/target/release/ || true
+            ls -l desktop/target/release/ || true
             exit 1
           fi
           bytes=$(stat -c %s "$exe")
@@ -209,7 +224,7 @@ jobs:
         with:
           name: node-runner-windows-x64
           path: |
-            desktop/src-tauri/target/release/node-runner.exe
-            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/target/release/node-runner.exe
+            desktop/target/release/bundle/nsis/*.exe
           if-no-files-found: warn
           retention-days: 14

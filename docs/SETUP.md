@@ -232,13 +232,17 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-Artifacts:
+Artifacts (under `desktop/target/`, because `desktop/` is the Cargo workspace
+root — the target directory is *not* under `src-tauri/`):
 
-* `desktop/src-tauri/target/release/node-runner.exe` — this is the portable
-  binary. Copy it anywhere; it carries its frontend inside. It relies on the
-  WebView2 runtime being present, which it is on any updated Windows 10/11.
-* `desktop/src-tauri/target/release/bundle/nsis/*.exe` — an installer, which is
-  the variant that can bootstrap WebView2 on a machine that lacks it.
+* `desktop/target/release/node-runner.exe` — this is the portable binary. Copy it
+  anywhere; it carries its frontend inside. It relies on the WebView2 runtime
+  being present, which it is on any updated Windows 10/11.
+* `desktop/target/release/bundle/nsis/*.exe` — an installer, which is the variant
+  that can bootstrap WebView2 on a machine that lacks it.
+
+The same two paths are published as artifacts of the `ci` workflow on Windows,
+so a machine without the MSVC toolchain can still obtain the binary.
 
 Then, in the app:
 
