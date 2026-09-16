@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      No remote origins anywhere: the strict CSP in tauri.conf.json allows only
+      'self' and the IPC channel. System fonts only, icons drawn as inline SVG,
+      and the bundle is a single local script. A vault UI that can reach the
+      network from its own renderer is a vault UI that can leak.
+    -->
+    <title>Node Runner</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Node Runner</h1>
+            <p id="app-subtitle" class="subtitle">loading&hellip;</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div id="vault-chip" class="chip chip-muted" role="status">vault unknown</div>
+          <div id="node-chip" class="chip chip-muted" role="status">node unknown</div>
+        </div>
+      </header>
+
+      <div id="alert-region" class="alert-region" role="alert" aria-live="polite"></div>
+
+      <nav class="tabs" role="tablist">
+        <button class="tab" data-tab="dashboard" role="tab" aria-selected="true">Dashboard</button>
+        <button class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+        <button class="tab" data-tab="logs" role="tab" aria-selected="false">Logs</button>
+      </nav>
+
+      <main class="content">
+        <section id="panel-dashboard" class="panel" role="tabpanel"></section>
+        <section id="panel-settings" class="panel hidden" role="tabpanel"></section>
+        <section id="panel-logs" class="panel hidden" role="tabpanel"></section>
+      </main>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

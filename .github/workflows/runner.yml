@@ -1,0 +1,145 @@
+# Compute node lifecycle.
+#
+# Two jobs, one workflow, and they must not be merged:
+#
+#   node     — the long-lived compute node, started by `workflow_dispatch` only.
+#   watchdog — a short scheduled job whose entire purpose is to notice when
+#              `node` has died without handing over, and start a replacement.
+#
+# The node is never started by cron. A cron trigger would start a node whether or
+# not one is already running, and two live nodes mean two workloads writing one
+# state tree. The lease prevents a torn snapshot, but it cannot reconcile two
+# workloads that disagree about the data. So: the successor is dispatched by its
+# predecessor, and the watchdog only fires once the heartbeat has gone quiet for
+# well over any legitimate gap.
+#
+# There is deliberately no `concurrency:` group. Serialising runs would cancel the
+# predecessor the moment the successor was dispatched, which is precisely the
+# overlap that keeps the tunnel continuously bound.
+
+name: node
+
+on:
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: Logical node identity. Ping-pongs across handovers.
+        required: true
+        default: blue
+        type: choice
+        options: [blue, green]
+      commit:
+        description: Predecessor commit (UTC timestamp) to record as our parent.
+        required: false
+        default: ""
+        type: string
+      reason:
+        description: Why this node is starting.
+        required: false
+        default: manual
+        type: choice
+        options: [manual, cycle, failover, emergency, bootstrap]
+      origin_run:
+        description: Run id of the predecessor, for the ledger.
+        required: false
+        default: ""
+        type: string
+  schedule:
+    # Watchdog only; the `node` job checks the event name and skips.
+    - cron: "*/30 * * * *"
+
+# The node needs no repository write access at all: the handover uses the
+# operator-scoped PAT through the REST API, not GITHUB_TOKEN.
+permissions:
+  contents: read
+
+env:
+  # Kept in one place so the runner scripts and this workflow cannot disagree.
+  DRIVE_REMOTE: gdrive
+  WORK_DIR: /home/runner/work_data
+  CYCLE_MINUTES: "340"
+  FREEZE_AT_MINUTES: "325"
+  BACKUP_RETENTION: "20"
+  ACK_TIMEOUT_SECONDS: "180"
+  LEASE_STALE_SECONDS: "900"
+  TARGET_REF: ${{ github.event.repository.default_branch }}
+  WORKFLOW_FILE: runner.yml
+  RCLONE_VERSION: "1.75.1"
+  CLOUDFLARED_VERSION: "2026.9.1"
+
+jobs:
+  node:
+    # Scheduled runs belong to the watchdog, never to the node.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # The hard platform ceiling is 360 minutes. It is also the reason the
+    # successor must be dispatched before its predecessor exits.
+    timeout-minutes: 360
+
+    env:
+      SLOT: ${{ inputs.slot }}
+      NODE_REASON: ${{ inputs.reason }}
+      PREDECESSOR_COMMIT: ${{ inputs.commit }}
+      # Secrets are injected as environment variables and never as command
+      # arguments. `argv` is world-readable on a shared host; the environment
+      # block of another user's process is not.
+      GH_PAT: ${{ secrets.GH_PAT }}
+      RCLONE_SERVICE_ACCOUNT_JSON: ${{ secrets.RCLONE_SERVICE_ACCOUNT_JSON }}
+      CF_TUNNEL_TOKEN: ${{ secrets.CF_TUNNEL_TOKEN }}
+      GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID }}
+      WORKLOAD_PATTERN: ${{ vars.WORKLOAD_PATTERN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache tooling
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin
+          key: node-tools-${{ runner.os }}-rclone${{ env.RCLONE_VERSION }}-cloudflared${{ env.CLOUDFLARED_VERSION }}
+
+      - name: Install pinned tooling
+        run: bash runner/install-tools.sh
+
+      - name: Run the node lifecycle
+        run: bash runner/lifecycle.sh --slot "$SLOT" --commit "$PREDECESSOR_COMMIT" --reason "$NODE_REASON"
+
+      - name: Upload the lifecycle log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifecycle-log-${{ inputs.slot }}-${{ github.run_id }}
+          path: /tmp/node-runner/lifecycle.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+  watchdog:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      RCLONE_SERVICE_ACCOUNT_JSON: ${{ secrets.RCLONE_SERVICE_ACCOUNT_JSON }}
+      GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache tooling
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin
+          key: node-tools-${{ runner.os }}-rclone${{ env.RCLONE_VERSION }}-cloudflared${{ env.CLOUDFLARED_VERSION }}
+
+      - name: Install rclone
+        # The watchdog never binds a tunnel, so it does not need cloudflared.
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.local/bin
+          if [[ ! -x ~/.local/bin/rclone ]]; then
+            bash runner/install-tools.sh --only rclone
+          fi
+
+      - name: Check liveness and recover if needed
+        run: bash runner/watchdog.sh

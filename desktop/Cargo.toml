@@ -1,0 +1,30 @@
+[workspace]
+members = ["nrvault", "src-tauri"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zeroize = { version = "1.8", features = ["derive"] }
+thiserror = "2"
+subtle = "2.6"
+
+# Footprint policy: see docs/OPERATIONS.md "Binary size budget".
+# `panic = "abort"` also removes the unwinding tables that crash dumps would
+# otherwise use to capture vault material. Note it makes `cargo test --release`
+# unusable (the test harness requires unwinding) -- run tests in debug.
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+incremental = false
+overflow-checks = false
+debug = false

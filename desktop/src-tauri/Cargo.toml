@@ -1,0 +1,51 @@
+[package]
+name = "node-runner"
+description = "Desktop orchestrator for the migrating compute node"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "node_runner_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# `tray-icon` is required for the idle-to-tray behaviour: closing the window
+# destroys the WebView2 host so the app drops to backend-only memory.
+# `image-png` is needed to load the tray icon from PNG at runtime.
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+
+nrvault = { path = "../nrvault" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+
+# `native-tls` (schannel on Windows) rather than `rustls`: it reuses the OS TLS
+# stack, so no TLS implementation is linked into the binary. On a <5MB budget
+# that is worth roughly 1MB, and it is why reqwest is not built with its default
+# features.
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "native-tls",
+    "gzip",
+] }
+
+# RSA signing for the Google service-account JWT. `ring` is already in the
+# dependency graph via the AEAD stack, so this adds no new native code.
+ring = "0.17"
+base64ct = "1.6"
+# Already in the graph via nrvault; used here for non-secret fingerprints only
+# (credential-change detection and the secret fingerprint shown in the UI).
+sha2 = "0.10"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

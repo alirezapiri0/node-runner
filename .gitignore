@@ -1,0 +1,19 @@
+# Deployment-specific: copy runner/workload.example.sh to runner/workload.sh and
+# put your own code there. It should not be committed to this template, and on a
+# real node it should only be committed if you are comfortable with the workload
+# being part of the repository's history.
+runner/workload.sh
+
+# Local scratch: rclone config fragments, service-account keys, temp export.
+*.local
+*.json.key
+service-account*.json
+rclone.conf
+
+# Editor and OS noise.
+.DS_Store
+Thumbs.db
+*.swp
+
+# Agent workspace metadata: local to the checkout, never part of the project.
+.freebuff/

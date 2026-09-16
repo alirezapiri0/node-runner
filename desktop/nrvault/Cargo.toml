@@ -1,0 +1,64 @@
+[package]
+name = "nrvault"
+description = "Zero-knowledge credential vault: Argon2id + AEAD + DPAPI + HMAC envelope"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# This crate deliberately has ZERO UI dependencies. It is the whole security
+# boundary and is kept separable so it can be audited and fuzzed on its own.
+[dependencies]
+argon2 = { version = "0.5", features = ["std"] }
+aes-gcm = "0.10"
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+sha2 = "0.10"
+# `crypto_box` provides NaCl-compatible X25519 + XSalsa20-Poly1305 and, with it,
+# `crypto_box_seal`. That is the exact primitive the GitHub Actions Secrets API
+# requires, so it belongs here in the audited crate rather than in the UI layer.
+crypto_box = { version = "0.9", features = ["seal"] }
+# `base64ct` is already in the tree via Argon2's password-hash, so using it here
+# costs nothing in download or binary size -- and it decodes in constant time,
+# which is the right property for parsing key material.
+base64ct = "1.6"
+hmac = "0.12"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+zeroize = { workspace = true }
+thiserror = { workspace = true }
+subtle = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security_Cryptography",
+    "Win32_Security_Credentials",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_Debug",
+] }
+
+# Kept deliberately tiny. The test suite uses a ~20-line temp-dir helper rather
+# than `tempfile`, because that crate pulls `getrandom 0.4` -> `windows-link`,
+# which requires `raw-dylib` import-library generation and therefore an
+# assembler in the build environment -- real friction for no benefit. This
+# crate's dependency list is treated as part of its attack surface.
+[dev-dependencies]
+# Already present as a transitive dependency of Argon2's `password-hash`, so
+# this adds nothing to the build graph; it is here only so the integration tests
+# can encode a key the way the GitHub API does.
+base64ct = "1.6"
+
+[features]
+# Enables the Windows Credential Vault helper (a convenience tier only, NOT a
+# security tier -- see docs/THREAT_MODEL.md). Off unless explicitly requested.
+credman = []
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
