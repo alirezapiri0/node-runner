@@ -15,5 +15,9 @@ rclone.conf
 Thumbs.db
 *.swp
 
+# Binaries downloaded from a CI run, for local use. Build outputs do not belong in
+# the history of a repository whose whole point is that it can be rebuilt.
+artifacts/
+
 # Agent workspace metadata: local to the checkout, never part of the project.
 .freebuff/
