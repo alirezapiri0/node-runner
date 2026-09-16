@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Node Runner — dev harness</title>
+  </head>
+  <body>
+    <!--
+      Development entry point: the real interface, driven by a mocked command
+      layer, in an ordinary browser. Run `npm run dev` and open /dev/harness.html.
+
+      The shell is *fetched* from index.html rather than copied here. A copied
+      shell is how a harness quietly stops matching the application it exists to
+      exercise, and that same kind of drift is what let a blank Settings panel
+      reach a release while typecheck, lint and CI all stayed green.
+    -->
+    <script type="module">
+      const shell = await (await fetch("../index.html")).text();
+      const parsed = new DOMParser().parseFromString(shell, "text/html");
+      // Inserting a script through innerHTML never executes it, but leaving the
+      // tag in the tree would still produce a confusing 404.
+      parsed.body.querySelectorAll("script").forEach((node) => node.remove());
+      document.body.insertAdjacentHTML("afterbegin", parsed.body.innerHTML);
+
+      const note = document.createElement("div");
+      note.textContent = "dev harness · mocked backend · not the shipped app";
+      note.style.cssText =
+        "position:fixed;bottom:8px;right:8px;z-index:9;font:11px/1.4 ui-monospace,monospace;" +
+        "color:#8b98a9;background:#11151c;border:1px solid #232a35;border-radius:6px;padding:4px 8px";
+      document.body.append(note);
+
+      await import("../src/styles.css");
+      window.__TAURI_INTERNALS__ = (await import("./mock.ts")).internals;
+      await import("../src/main.ts");
+    </script>
+  </body>
+</html>

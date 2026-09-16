@@ -186,8 +186,14 @@ function render(): void {
     );
   }
 
+  // Settings is rebuilt only when a render has been explicitly requested, never
+  // on a poll tick: the panel holds text inputs, and rebuilding it mid-paste
+  // would discard whatever the user had just pasted -- which is indistinguishable
+  // from the field simply not working. The flag is consumed by this render, so
+  // the polarity matters: the panel renders *when* it is set, and is then cleared.
+  // Inverting this condition is what left the whole panel permanently blank.
   const settings = document.getElementById("panel-settings");
-  if (settings && store.tab === "settings" && !store.forceRender) {
+  if (settings && store.tab === "settings" && store.forceRender) {
     settingsScroll = settings.scrollTop;
     settings.replaceChildren(
       ui.renderSettings(store.vault, store.config, store.info, store.kdf, {
@@ -284,6 +290,14 @@ function render(): void {
       ? view.scrollTop + view.clientHeight >= view.scrollHeight - 24
       : true;
 
+    // The search field lives inside the subtree that is about to be replaced, so
+    // its focus and caret have to survive the swap. Without this, the first
+    // keystroke re-renders the panel, the field is replaced by an equivalent one
+    // that is not focused, and every subsequent character goes nowhere.
+    const focused = document.activeElement as HTMLInputElement | null;
+    const focusedId = focused?.id ?? null;
+    const caret = focusedId === "log-search" ? focused?.selectionStart ?? null : null;
+
     logs.replaceChildren(
       ui.renderLogs(store.logs, store.logPaused, store.logSearch, {
         onTogglePause: () => {
@@ -309,6 +323,16 @@ function render(): void {
         },
       }),
     );
+
+    if (focusedId) {
+      const restored = document.getElementById(focusedId) as HTMLInputElement | null;
+      if (restored && restored !== focused) {
+        restored.focus();
+        if (caret !== null) {
+          restored.setSelectionRange(caret, caret);
+        }
+      }
+    }
 
     // Auto-scroll only when the user was already at the bottom; otherwise they
     // are reading, and jumping them to the end would be hostile.

@@ -244,6 +244,21 @@ root — the target directory is *not* under `src-tauri/`):
 The same two paths are published as artifacts of the `ci` workflow on Windows,
 so a machine without the MSVC toolchain can still obtain the binary.
 
+To look at the interface *without* the Rust backend there is a development
+harness:
+
+```bash
+cd desktop
+npm run dev          # then open http://127.0.0.1:1420/dev/harness.html
+```
+
+It loads the real `index.html` shell and the real `src/` modules, and replaces
+only the Tauri command layer with canned data. Two reasons this earns its place:
+a rendering change can be checked on a machine that cannot build Tauri at all,
+and a panel that renders nothing fails silently against a green typecheck -- which
+is how a blank Settings panel reached a release. Nothing in `src/` imports the
+harness and it is not part of the bundle.
+
 Then, in the app:
 
 1. **Settings → Vault → Initialise.** Choose a master passphrase. Argon2id
