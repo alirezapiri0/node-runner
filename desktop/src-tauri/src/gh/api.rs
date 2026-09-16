@@ -157,31 +157,6 @@ pub struct GithubClient {
     http: reqwest::Client,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::successor_slot;
-
-    #[test]
-    fn successor_slot_alternates_within_the_workflows_choice_list() {
-        assert_eq!(successor_slot("blue"), "green");
-        assert_eq!(successor_slot("green"), "blue");
-    }
-
-    #[test]
-    fn an_unrecognised_slot_is_never_echoed_back() {
-        // "a" is what this app used to send, and GitHub rejected it with a 422.
-        assert_eq!(successor_slot("a"), "blue");
-        assert_eq!(successor_slot(""), "blue");
-        assert_eq!(successor_slot("?"), "blue");
-        assert_eq!(successor_slot("Blue"), "blue");
-
-        // Whatever the input, the result must be something the workflow accepts.
-        for current in ["", "?", "a", "b", "blue", "green", "Blue", "GREEN"] {
-            assert!(matches!(successor_slot(current), "blue" | "green"));
-        }
-    }
-}
-
 impl GithubClient {
     pub fn new() -> Result<Self, GhError> {
         let http = reqwest::Client::builder()
@@ -461,4 +436,32 @@ pub fn redact(token: &Zeroizing<String>) -> String {
         return "[redacted]".into();
     }
     format!("{}...[redacted]", chars[..4].iter().collect::<String>())
+}
+
+// The test module belongs at the end of the file: clippy's
+// `items-after-test-module` exists because a module in the middle invites exactly
+// the confusion of whether what follows is still under test.
+#[cfg(test)]
+mod tests {
+    use super::successor_slot;
+
+    #[test]
+    fn successor_slot_alternates_within_the_workflows_choice_list() {
+        assert_eq!(successor_slot("blue"), "green");
+        assert_eq!(successor_slot("green"), "blue");
+    }
+
+    #[test]
+    fn an_unrecognised_slot_is_never_echoed_back() {
+        // "a" is what this app used to send, and GitHub rejected it with a 422.
+        assert_eq!(successor_slot("a"), "blue");
+        assert_eq!(successor_slot(""), "blue");
+        assert_eq!(successor_slot("?"), "blue");
+        assert_eq!(successor_slot("Blue"), "blue");
+
+        // Whatever the input, the result must be something the workflow accepts.
+        for current in ["", "?", "a", "b", "blue", "green", "Blue", "GREEN"] {
+            assert!(matches!(successor_slot(current), "blue" | "green"));
+        }
+    }
 }

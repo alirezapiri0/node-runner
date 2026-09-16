@@ -100,6 +100,29 @@ def ico_bytes(pixels: list[list[tuple[int, int, int, int]]]) -> bytes:
     return directory + entry + image
 
 
+def zlib_stored(data: bytes) -> bytes:
+    """Wrap `data` in a zlib stream built from stored (uncompressed) blocks.
+
+    Compressed output is not byte-identical across builds of zlib itself, so a
+    reproducibility check that hashes a compressed PNG fails on another machine
+    for a reason that has nothing to do with the icon -- which is exactly what
+    happened the first time this ran in CI. Stored blocks are trivially
+    deterministic, and these files are a few kilobytes either way.
+    """
+    out = bytearray(b"\x78\x01")  # CMF/FLG: deflate, 32 KiB window, no preset dict
+    remaining = data
+    while True:
+        block = remaining[:65535]
+        remaining = remaining[65535:]
+        out.append(1 if not remaining else 0)  # BFINAL on the final block only
+        out += struct.pack("<HH", len(block), 0xFFFF ^ len(block))
+        out += block
+        if not remaining:
+            break
+    out += struct.pack(">I", zlib.adler32(data) & 0xFFFFFFFF)
+    return bytes(out)
+
+
 def png_bytes(pixels: list[list[tuple[int, int, int, int]]]) -> bytes:
     size = len(pixels)
 
@@ -121,7 +144,7 @@ def png_bytes(pixels: list[list[tuple[int, int, int, int]]]) -> bytes:
     return (
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", ihdr)
-        + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+        + chunk(b"IDAT", zlib_stored(bytes(raw)))
         + chunk(b"IEND", b"")
     )
 
