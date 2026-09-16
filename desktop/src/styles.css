@@ -514,6 +514,69 @@ tr:last-child td {
   border-bottom: none;
 }
 
+/*
+ * A table has to fit the card it sits in. With the default `table-layout: auto`
+ * the browser cannot shrink below the longest unbreakable token, so a name like
+ * RCLONE_SERVICE_ACCOUNT_JSON widened the whole table past its card and pushed
+ * the row's action button underneath the neighbouring card -- a Delete button
+ * that is clipped is the same as no Delete button. Fixed layout moves that
+ * decision to the declared column widths and wraps the content instead.
+ *
+ * Widths are declared on the header cells because in a fixed-layout table the
+ * column widths come from the first row: a width on a body cell is ignored.
+ */
+.table-secrets,
+.table-ledger {
+  table-layout: fixed;
+}
+
+.table-secrets th:nth-child(1) {
+  width: 30%;
+}
+
+.table-secrets th:nth-child(2) {
+  width: 18%;
+}
+
+/* Absorbs whatever is left, which is what keeps the button column intact. */
+.table-secrets th:nth-child(3) {
+  width: auto;
+}
+
+.table-secrets th:nth-child(4) {
+  width: 84px;
+}
+
+.table-ledger th:nth-child(1) {
+  width: 54%;
+}
+
+.table-ledger th:nth-child(2) {
+  width: 26%;
+}
+
+.table-ledger th:nth-child(3) {
+  width: 20%;
+  text-align: right;
+}
+
+/* Secret names, snapshot paths and operator notes are all longer than their
+   column, and none of them has a natural break character. */
+.table-secrets td,
+.table-ledger td {
+  overflow-wrap: anywhere;
+}
+
+.table-secrets .cell-actions,
+.table-ledger .cell-size {
+  text-align: right;
+}
+
+.table-secrets .cell-actions .action,
+.table-ledger .cell-size {
+  max-width: 100%;
+}
+
 .empty-state {
   color: var(--text-faint);
   font-size: 13px;

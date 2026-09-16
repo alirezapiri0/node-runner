@@ -429,7 +429,7 @@ export function renderDashboard(
   } else {
     const table = h(
       "table",
-      {},
+      { class: "table-ledger" },
       h(
         "thead",
         {},
@@ -444,7 +444,7 @@ export function renderDashboard(
           {},
           h("td", { text: entry.name }),
           h("td", { text: cd.relativeTime(entry.modified_unix) }),
-          h("td", { text: cd.formatBytes(entry.size) }),
+          h("td", { class: "cell-size", text: cd.formatBytes(entry.size) }),
         ),
       );
     }
@@ -667,7 +667,7 @@ export function renderSettings(
   if (vault && vault.secrets.length > 0) {
     const table = h(
       "table",
-      {},
+      { class: "table-secrets" },
       h(
         "thead",
         {},
@@ -685,7 +685,7 @@ export function renderSettings(
           h("td", { text: secret.note ?? "—" }),
           h(
             "td",
-            {},
+            { class: "cell-actions" },
             h("button", {
               class: "action ghost",
               type: "button",
