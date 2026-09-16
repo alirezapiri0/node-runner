@@ -44,9 +44,11 @@ source "${SCRIPT_DIR}/lib/drain.sh"
 mkdir -p "$PIPE_DIR"
 touch "$LOG_FILE"
 
-readonly START_UNIX="$(now_unix)"
+# Assigned before being made readonly: `readonly X="$(cmd)"` masks the command's
+# own exit status, which would hide a failure of `now_unix`.
+START_UNIX=$(now_unix)
+readonly START_UNIX
 LAST_GOOD_COMMIT="${PREDECESSOR_COMMIT:-}"
-SNAPSHOT_COMMIT_TS=""
 HANDOVER_DONE=0
 TUNNEL_PID=""
 WORKLOAD_PID=""
@@ -261,7 +263,10 @@ phase_snapshot() {
 }
 
 phase_backup() {
-  if ! snapshot=$(backup_publish "$LAST_GOOD_COMMIT"); then
+  # `backup_publish` announces the snapshot path on stdout and logs to stderr;
+  # the path is already available as SNAPSHOT_PATH, so the capture is discarded
+  # rather than bound to a variable nothing reads.
+  if ! backup_publish "$LAST_GOOD_COMMIT" >/dev/null; then
     # backup_publish dies rather than returning, so reaching here means it did
     # not. Left as an explicit guard so a future refactor cannot silently turn a
     # failed backup into a successful cycle.
@@ -269,7 +274,6 @@ phase_backup() {
     return 1
   fi
 
-  SNAPSHOT_COMMIT_TS="$SNAPSHOT_TS"
   LAST_GOOD_COMMIT="$SNAPSHOT_PATH"
   backup_prune
   heartbeat_write "committed" "${#FROZEN_PIDS[@]}" 0 "$LAST_GOOD_COMMIT"

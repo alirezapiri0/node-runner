@@ -37,9 +37,10 @@ readonly CLOUDFLARED_VERSION="${CLOUDFLARED_VERSION:-2026.9.1}"
 readonly BIN_DIR="${BIN_DIR:-${HOME}/.local/bin}"
 readonly CHECKSUM_FILE="${CHECKSUM_FILE:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/cloudflared.sha256}"
 
-# Recorded fallback, so the build does not depend on a live API call. The
-# checksum file remains authoritative and is what is actually verified against.
-readonly CLOUDFLARED_PINNED_SHA256="03f1f25d1cc93b9ad6c60569d44060bc4f17ed97075760ed8cfca4b12dcd68cc"
+# The digest lives in `cloudflared.sha256` beside this script. That file is the
+# offline source of truth and the only thing actually verified against; the
+# release API is consulted as an independent second opinion, not as a fallback,
+# because a fallback that nothing reads is just an unverified constant.
 
 log() { printf '%s [tools] %s\n' "$(date -u '+%H:%M:%SZ')" "$*" >&2; }
 die() { printf '%s [tools] FATAL: %s\n' "$(date -u '+%H:%M:%SZ')" "$*" >&2; exit 1; }

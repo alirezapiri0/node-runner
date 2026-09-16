@@ -119,8 +119,67 @@ pub struct DispatchOutcome {
     pub detail: String,
 }
 
+/// The slot a successor should take, given the slot currently observed.
+///
+/// The workflow declares `slot` as a `choice` input limited to `blue|green`, and
+/// GitHub answers any other value with a 422 instead of coercing it. So the
+/// alternation has to be expressed in exactly that vocabulary, and an unrecognised
+/// input must map to something dispatchable rather than being echoed back. This is
+/// the one string the app and the workflow have to agree on, which is why it lives
+/// here as a pure function with a test rather than inline in a command.
+pub fn successor_slot(current: &str) -> &'static str {
+    match current {
+        "blue" => "green",
+        "green" => "blue",
+        _ => "blue",
+    }
+}
+
+/// Everything a dispatch needs, with every parameter named.
+///
+/// Seven positional `&str` arguments is a shape where a slot and a reason are one
+/// transposition away from being silently swapped -- and the successor would then
+/// be started with a reason used as a slot name, which the workflow's `choice`
+/// input would reject at the least convenient moment. Naming them at the call site
+/// costs nothing.
+#[derive(Debug, Clone)]
+pub struct DispatchRequest<'a> {
+    pub token: &'a str,
+    pub slug: &'a str,
+    pub workflow_file: &'a str,
+    pub git_ref: &'a str,
+    pub slot: &'a str,
+    pub commit: &'a str,
+    pub reason: &'a str,
+}
+
 pub struct GithubClient {
     http: reqwest::Client,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::successor_slot;
+
+    #[test]
+    fn successor_slot_alternates_within_the_workflows_choice_list() {
+        assert_eq!(successor_slot("blue"), "green");
+        assert_eq!(successor_slot("green"), "blue");
+    }
+
+    #[test]
+    fn an_unrecognised_slot_is_never_echoed_back() {
+        // "a" is what this app used to send, and GitHub rejected it with a 422.
+        assert_eq!(successor_slot("a"), "blue");
+        assert_eq!(successor_slot(""), "blue");
+        assert_eq!(successor_slot("?"), "blue");
+        assert_eq!(successor_slot("Blue"), "blue");
+
+        // Whatever the input, the result must be something the workflow accepts.
+        for current in ["", "?", "a", "b", "blue", "green", "Blue", "GREEN"] {
+            assert!(matches!(successor_slot(current), "blue" | "green"));
+        }
+    }
 }
 
 impl GithubClient {
@@ -260,27 +319,31 @@ impl GithubClient {
     /// it is worth scoping that credential to `Actions: write` on one repository.
     pub async fn dispatch(
         &self,
-        token: &str,
-        slug: &str,
-        workflow_file: &str,
-        git_ref: &str,
-        slot: &str,
-        commit: &str,
-        reason: &str,
+        request: &DispatchRequest<'_>,
     ) -> Result<DispatchOutcome, GhError> {
         let url = self.url(&format!(
-            "/repos/{slug}/actions/workflows/{workflow_file}/dispatches"
+            "/repos/{}/actions/workflows/{}/dispatches",
+            request.slug, request.workflow_file
         ));
 
         let mut inputs = serde_json::Map::new();
-        inputs.insert("slot".into(), serde_json::Value::String(slot.into()));
-        inputs.insert("commit".into(), serde_json::Value::String(commit.into()));
-        inputs.insert("reason".into(), serde_json::Value::String(reason.into()));
+        inputs.insert(
+            "slot".into(),
+            serde_json::Value::String(request.slot.into()),
+        );
+        inputs.insert(
+            "commit".into(),
+            serde_json::Value::String(request.commit.into()),
+        );
+        inputs.insert(
+            "reason".into(),
+            serde_json::Value::String(request.reason.into()),
+        );
 
-        let body = serde_json::json!({ "ref": git_ref, "inputs": inputs });
+        let body = serde_json::json!({ "ref": request.git_ref, "inputs": inputs });
 
         let response = self
-            .auth(self.http.post(&url), token)
+            .auth(self.http.post(&url), request.token)
             .json(&body)
             .send()
             .await
@@ -294,7 +357,10 @@ impl GithubClient {
         if status.as_u16() == 204 || status.is_success() {
             return Ok(DispatchOutcome {
                 accepted: true,
-                detail: format!("dispatched {workflow_file} to slot {slot} on {git_ref}"),
+                detail: format!(
+                    "dispatched {} to slot {} on {}",
+                    request.workflow_file, request.slot, request.git_ref
+                ),
             });
         }
 

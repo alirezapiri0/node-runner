@@ -170,6 +170,14 @@ jobs:
         working-directory: desktop
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+      - name: Test the application crate
+        # The vault's tests run in their own job; these are the app's, and until
+        # this step existed they were compiled by clippy and then never executed
+        # anywhere. On Windows they can also reach DPAPI, which is the only
+        # platform where that code path exists at all.
+        working-directory: desktop
+        run: cargo test -p node-runner
+
       - name: Build the application
         working-directory: desktop
         run: npm run tauri:build

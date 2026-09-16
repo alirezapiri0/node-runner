@@ -20,6 +20,7 @@ use serde::Serialize;
 use tauri::State;
 
 use crate::drive::ledger::{DriveEntry, Heartbeat};
+use crate::gh::api::{successor_slot, DispatchRequest};
 use crate::gh::secrets::SecretReport;
 use crate::state::{save_config, save_kill_switch, AppState, Config, NodeStatus, VaultStatus};
 
@@ -521,24 +522,22 @@ pub async fn node_dispatch(state: State<'_, AppState>) -> CmdResult<DispatchRepo
         .ok_or_else(|| "set the repository owner and name in Settings".to_string())?;
     let token = state.secret_copy("GH_PAT")?;
 
-    let target_slot = match state.status_snapshot().slot.as_str() {
-        "a" => "b",
-        "b" => "a",
-        // Nothing running: start in slot a.
-        _ => "a",
-    };
+    // Computed by a tested function rather than inline: the workflow rejects any
+    // slot outside `blue|green` with a 422, which is how the a/b spelling this
+    // used to send went unnoticed until CI compiled the crate.
+    let target_slot = successor_slot(&state.status_snapshot().slot);
 
     let outcome = state
         .gh
-        .dispatch(
-            &token,
-            &slug,
-            &config.workflow_file,
-            "main",
-            target_slot,
-            "",
-            "failover",
-        )
+        .dispatch(&DispatchRequest {
+            token: token.as_str(),
+            slug: slug.as_str(),
+            workflow_file: config.workflow_file.as_str(),
+            git_ref: "main",
+            slot: target_slot,
+            commit: "",
+            reason: "failover",
+        })
         .await
         .map_err(|e| e.to_string())?;
 

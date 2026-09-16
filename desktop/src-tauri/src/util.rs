@@ -103,8 +103,11 @@ mod tests {
 
     #[test]
     fn tolerates_fractional_seconds_and_rejects_junk() {
-        let base = rfc3339_to_unix("2026-09-16T12:34:56Z").unwrap();
-        assert_eq!(rfc3339_to_unix("2026-09-16T12:34:56.000Z"), Some(base));
+        // Compared against the whole-second parse of the same instant rather than
+        // unwrapped: this crate denies `unwrap_used` deliberately, and a test is
+        // not a reason to carve an exception into a panic-free rule.
+        let whole = rfc3339_to_unix("2026-09-16T12:34:56Z");
+        assert_eq!(rfc3339_to_unix("2026-09-16T12:34:56.000Z"), whole);
         assert_eq!(rfc3339_to_unix(""), None);
         assert_eq!(rfc3339_to_unix("not-a-date"), None);
         assert_eq!(rfc3339_to_unix("2026-13-16T12:34:56Z"), None);
