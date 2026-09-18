@@ -79,7 +79,7 @@ install_rclone() {
   local zip="rclone-v${RCLONE_VERSION}-linux-amd64.zip"
   local tmp
   tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' RETURN
+  trap 'rm -rf "${tmp:-}"' RETURN
 
   log "downloading rclone v${RCLONE_VERSION}"
   curl -fsSL --retry 3 -o "${tmp}/${zip}" "${base}/${zip}" || die "rclone download failed"
@@ -93,6 +93,8 @@ install_rclone() {
   unzip -q -o "${tmp}/${zip}" -d "$tmp" || die "could not unpack rclone"
   install -m 0755 "${tmp}/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" "${BIN_DIR}/rclone"
   log "installed rclone v${RCLONE_VERSION}"
+  rm -rf "$tmp"
+  trap - RETURN
 }
 
 install_cloudflared() {
@@ -128,7 +130,7 @@ install_cloudflared() {
   local url="https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-amd64"
   local tmp
   tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' RETURN
+  trap 'rm -rf "${tmp:-}"' RETURN
 
   log "downloading cloudflared ${CLOUDFLARED_VERSION}"
   curl -fsSL --retry 3 -o "${tmp}/cloudflared" "$url" || die "cloudflared download failed"
@@ -136,6 +138,8 @@ install_cloudflared() {
 
   install -m 0755 "${tmp}/cloudflared" "${BIN_DIR}/cloudflared"
   log "installed cloudflared ${CLOUDFLARED_VERSION}"
+  rm -rf "$tmp"
+  trap - RETURN
 }
 
 main() {
