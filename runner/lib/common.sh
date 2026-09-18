@@ -42,9 +42,9 @@ readonly STATE_ROOT="${STATE_ROOT:-state}"
 readonly HEARTBEAT_FILE="${HEARTBEAT_FILE:-heartbeat.json}"
 readonly KILLSWITCH_FILE="${KILLSWITCH_FILE:-KILLSWITCH.json}"
 
-readonly CYCLE_MINUTES="${CYCLE_MINUTES:-340}"
-readonly FREEZE_AT_MINUTES="${FREEZE_AT_MINUTES:-325}"
-readonly ACK_TIMEOUT_SECONDS="${ACK_TIMEOUT_SECONDS:-180}"
+readonly CYCLE_MINUTES="${CYCLE_MINUTES:-350}"
+readonly FREEZE_AT_MINUTES="${FREEZE_AT_MINUTES:-340}"
+readonly ACK_TIMEOUT_SECONDS="${ACK_TIMEOUT_SECONDS:-300}"
 readonly HEARTBEAT_INTERVAL_SECONDS="${HEARTBEAT_INTERVAL_SECONDS:-60}"
 readonly BACKUP_RETENTION="${BACKUP_RETENTION:-20}"
 readonly WORKLOAD_PATTERN="${WORKLOAD_PATTERN:-}"
@@ -57,12 +57,12 @@ readonly LOG_FILE="${PIPE_DIR}/lifecycle.log"
 readonly SA_FILE="${PIPE_DIR}/service-account.json"
 
 # Guard rails. These are mistakes that are cheap to catch and expensive to
-# discover at minute 325.
+# discover at minute 340.
 if (( FREEZE_AT_MINUTES >= CYCLE_MINUTES )); then
   echo "FATAL: FREEZE_AT_MINUTES (${FREEZE_AT_MINUTES}) must be below CYCLE_MINUTES (${CYCLE_MINUTES})" >&2
   exit 2
 fi
-if (( CYCLE_MINUTES > 345 )); then
+if (( CYCLE_MINUTES > 355 )); then
   echo "FATAL: CYCLE_MINUTES (${CYCLE_MINUTES}) leaves too little margin under GitHub's 360 minute job limit" >&2
   exit 2
 fi

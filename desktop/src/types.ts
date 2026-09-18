@@ -138,18 +138,19 @@ export const REQUIRED_SECRETS: RequiredSecret[] = [
   {
     name: "GH_PAT",
     purpose:
-      "Dispatches the successor run. Needs Actions: read and write, and Contents: read, on this one repository — nothing broader.",
+      "توکن دسترسی گیت‌هاب (GitHub PAT) — برای ایجاد و ادامه حتمی هاستینگ روی جاب بعدی در گیت‌هاب اکشن. نیاز به دسترسی Actions (خواندن و نوشتن) و Contents (خواندن).",
     multiline: false,
   },
   {
     name: "RCLONE_SERVICE_ACCOUNT_JSON",
     purpose:
-      "Authenticates rclone to the backup folder. Never expires, because it is a service account rather than an OAuth grant.",
+      "کلید حساب سرویس گوگل درایو (Service Account JSON) — جهت ذخیره، اسنپ‌شات و بازیابی مداوم داده‌های هاستینگ بین جاب‌های اکشن در گوگل درایو.",
     multiline: true,
   },
   {
     name: "CF_TUNNEL_TOKEN",
-    purpose: "Binds the immutable hostname so the endpoint survives every node migration.",
+    purpose:
+      "توکن تانل کلودفلر (Cloudflare Tunnel) — اتصال دائمی دامنه شما به جاب اکشن تا در طول جابجایی و تداوم هاستینگ، دامنه پایدار بماند.",
     multiline: false,
   },
 ];

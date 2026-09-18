@@ -69,13 +69,14 @@ dispatch_node() {
     *) next_slot=blue ;;
   esac
 
-  log "dispatching a node (slot ${next_slot}, reason ${reason}): ${detail}"
+  local target_ref="${TARGET_REF:-main}"
+  [[ -z "$target_ref" ]] && target_ref="main"
 
   local body
   body=$(jq -n \
     --arg slot "$next_slot" \
     --arg reason "$reason" \
-    --arg ref "$TARGET_REF" \
+    --arg ref "$target_ref" \
     '{ref:$ref, inputs:{slot:$slot, reason:$reason, commit:""}}')
 
   if gh_api POST "/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches" "$body" \

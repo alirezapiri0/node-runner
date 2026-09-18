@@ -57,12 +57,12 @@ env:
   # Kept in one place so the runner scripts and this workflow cannot disagree.
   DRIVE_REMOTE: gdrive
   WORK_DIR: /home/runner/work_data
-  CYCLE_MINUTES: "340"
-  FREEZE_AT_MINUTES: "325"
+  CYCLE_MINUTES: "350"
+  FREEZE_AT_MINUTES: "340"
   BACKUP_RETENTION: "20"
-  ACK_TIMEOUT_SECONDS: "180"
+  ACK_TIMEOUT_SECONDS: "300"
   LEASE_STALE_SECONDS: "900"
-  TARGET_REF: ${{ github.event.repository.default_branch }}
+  TARGET_REF: ${{ github.ref_name || github.event.repository.default_branch || 'main' }}
   WORKFLOW_FILE: runner.yml
   RCLONE_VERSION: "1.75.1"
   CLOUDFLARED_VERSION: "2026.9.1"

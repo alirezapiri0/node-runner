@@ -296,8 +296,8 @@ export function renderDashboard(
   const countdownCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Instance lifetime" }),
-    h("p", { class: "card-note", text: "Derived from GitHub's own start timestamp, so it survives restarts and sleep." }),
+    h("h2", { text: "چرخه مهاجرت نود (Migration Countdown)" }),
+    h("p", { class: "card-note", text: "محاسبه زمان بر اساس تایم‌استمپ گیت‌هاب؛ زمان باقی‌مانده از چرخه ۶ ساعته جاب فعلی تا انتقال به جاب جدید." }),
     h(
       "div",
       { class: "countdown" },
@@ -314,19 +314,19 @@ export function renderDashboard(
           "div",
           { class: "ring-label" },
           h("span", { class: "ring-time", text: cd.formatDuration(remaining) }),
-          h("span", { class: "ring-caption", text: "remaining" }),
+          h("span", { class: "ring-caption", text: "باقی‌مانده (remaining)" }),
         ),
       ),
       h(
         "div",
         { class: "countdown-meta" },
-        h("span", { class: "slot-badge", text: `slot ${status?.slot ?? "?"}` }),
+        h("span", { class: "slot-badge", text: `اسلات ${status?.slot ?? "?"}` }),
         h("span", {
           class: "mono-inline dim-text",
           text:
             status?.elapsed_secs !== null && status?.elapsed_secs !== undefined
-              ? `up ${cd.formatDuration(status.elapsed_secs)} of ${cd.formatDuration(cycleSeconds)}`
-              : "no active run observed",
+              ? `فعال: ${cd.formatDuration(status.elapsed_secs)} از ${cd.formatDuration(cycleSeconds)}`
+              : "جاب فعالی در حال حاضر شناسایی نشد",
         }),
         h(
           "div",
@@ -334,7 +334,7 @@ export function renderDashboard(
           h("button", {
             class: "action primary",
             type: "button",
-            text: "Force migration / failover",
+            text: "انتقال دستی / جاب جدید (Force migration)",
             disabled: !vault?.unlocked || !config?.owner || status?.kill_switch,
             onclick: actions.onForceMigration,
           }),
@@ -342,7 +342,7 @@ export function renderDashboard(
             ? h("button", {
                 class: "action ghost",
                 type: "button",
-                text: "Open run",
+                text: "مشاهده در گیت‌هاب (Open run)",
                 onclick: () => actions.onOpenRun(status.run_url as string),
               })
             : null,
@@ -355,32 +355,32 @@ export function renderDashboard(
   const tunnelCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Static endpoint" }),
-    h("p", { class: "card-note", text: "A named Cloudflare tunnel, so this hostname is identical on every node." }),
+    h("h2", { text: "دامنه و تانل پایدار (Static Endpoint)" }),
+    h("p", { class: "card-note", text: "تانل اختصاصی Cloudflare؛ این دامنه روی تمامی جاب‌های بعدی یکسان و پایدار باقی می‌ماند." }),
     h(
       "div",
       { class: "row" },
-      h("span", { class: "row-value", text: hostname || "not configured" }),
+      h("span", { class: "row-value", text: hostname || "تنظیم نشده (not configured)" }),
       h("button", {
         class: "action",
         type: "button",
-        text: "Copy",
+        text: "کپی دامنه (Copy)",
         disabled: !hostname,
         onclick: () => actions.onCopyHostname(hostname),
       }),
     ),
     row(
-      "Tunnel health",
-      heartbeat ? `${heartbeat.phase || "unknown"}` : "no heartbeat yet",
+      "سلامت تانل (Tunnel health)",
+      heartbeat ? `${heartbeat.phase || "unknown"}` : "هنوز ضربان سلامتی دریافت نشده",
       heartbeat ? "value-ok" : "value-dim",
     ),
     row(
-      "Last heartbeat",
-      heartbeat ? cd.relativeTime(heartbeat.heartbeat_unix) : "never",
+      "آخرین ضربان سلامت (Last heartbeat)",
+      heartbeat ? cd.relativeTime(heartbeat.heartbeat_unix) : "هیچ‌وقت",
       heartbeat ? "" : "value-dim",
     ),
-    row("Serving run", heartbeat?.run_id ? String(heartbeat.run_id) : "—"),
-    row("Node slot", heartbeat?.slot || status?.slot || "—"),
+    row("جاب در حال سرویس (Serving run)", heartbeat?.run_id ? String(heartbeat.run_id) : "—"),
+    row("اسلات نود (Node slot)", heartbeat?.slot || status?.slot || "—"),
   );
 
   // -- node --------------------------------------------------------------
@@ -388,17 +388,17 @@ export function renderDashboard(
   const nodeCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Node" }),
-    h("p", { class: "card-note", text: "Polled every 30 seconds with conditional requests." }),
-    row("Phase", phaseLabel(status)),
-    row("Run id", status?.run_id ? String(status.run_id) : "—"),
+    h("h2", { text: "وضعیت نود اکشن (Action Node)" }),
+    h("p", { class: "card-note", text: "استعلام خودکار وضعیت سلامت هر ۳۰ ثانیه از گیت‌هاب." }),
+    row("فاز فعلی (Phase)", phaseLabel(status)),
+    row("شناسه جاب (Run ID)", status?.run_id ? String(status.run_id) : "—"),
     row(
-      "Repository",
-      config && config.owner && config.repo ? `${config.owner}/${config.repo}` : "not configured",
+      "مخزن گیت‌هاب (Repository)",
+      config && config.owner && config.repo ? `${config.owner}/${config.repo}` : "تنظیم نشده",
     ),
-    row("Last poll", cd.relativeTime(status?.last_poll_unix ?? null)),
+    row("آخرین استعلام (Last poll)", cd.relativeTime(status?.last_poll_unix ?? null)),
     row(
-      "API budget left",
+      "سهمیه باقی‌مانده API گیت‌هاب",
       status?.rate_limit_remaining !== null && status?.rate_limit_remaining !== undefined
         ? String(status.rate_limit_remaining)
         : "—",
@@ -409,23 +409,23 @@ export function renderDashboard(
       h("button", {
         class: killSwitch ? "action primary" : "action danger",
         type: "button",
-        text: killSwitch ? "Release stop switch" : "Engage stop switch",
+        text: killSwitch ? "لغو توقف اضطراری (Release stop switch)" : "فعال‌سازی توقف اضطراری (Engage stop switch)",
         disabled: !vault?.unlocked,
         onclick: actions.onToggleKillSwitch,
       }),
     ),
     h("p", {
       class: "card-note",
-      text: "The stop switch writes a marker to Drive that the running node checks before it freezes and hands over, and suppresses dispatch from this app.",
+      text: "سوئیچ توقف یک نشانگر در درایو ایجاد می‌کند تا جاب فعال، جاب بعدی را دیسپچ نکند و چرخه بعد از جاب فعلی متوقف شود.",
     }),
   );
 
   // -- backup ledger -------------------------------------------------------
   const ledgerRows: HTMLElement[] = [];
   if (ledgerError) {
-    ledgerRows.push(h("p", { class: "empty-state", text: `Ledger unavailable: ${ledgerError}` }));
+    ledgerRows.push(h("p", { class: "empty-state", text: `خطا در دریافت لیست بکاپ‌ها: ${ledgerError}` }));
   } else if (ledger.length === 0) {
-    ledgerRows.push(h("p", { class: "empty-state", text: "No snapshots recorded yet." }));
+    ledgerRows.push(h("p", { class: "empty-state", text: "هنوز اسنپ‌شاتی ثبت نشده است." }));
   } else {
     const table = h(
       "table",
@@ -433,7 +433,7 @@ export function renderDashboard(
       h(
         "thead",
         {},
-        h("tr", {}, h("th", { text: "Snapshot" }), h("th", { text: "Taken" }), h("th", { text: "Size" })),
+        h("tr", {}, h("th", { text: "اسنپ‌شات (Snapshot)" }), h("th", { text: "زمان ذخیره (Taken)" }), h("th", { text: "حجم (Size)" })),
       ),
     );
     const body = h("tbody", {});
@@ -455,10 +455,10 @@ export function renderDashboard(
   const ledgerCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Backup ledger" }),
+    h("h2", { text: "دفترچه اسنپ‌شات‌ها و بکاپ‌ها (Backup Ledger)" }),
     h("p", {
       class: "card-note",
-      text: `Snapshots on Drive, newest first. Retention is configured as ${config?.backup_retention ?? 20}.`,
+      text: `لیست اسنپ‌شات‌های ثبت شده در درایو (جدیدترین در ابتدا). تعداد مجاز نگهداری: ${config?.backup_retention ?? 20}.`,
     }),
     ...ledgerRows,
     h(
@@ -467,7 +467,7 @@ export function renderDashboard(
       h("button", {
         class: "action",
         type: "button",
-        text: "Refresh ledger",
+        text: "بروزرسانی لیست بکاپ‌ها (Refresh ledger)",
         disabled: !vault?.unlocked,
         onclick: actions.onRefreshLedger,
       }),
@@ -478,10 +478,10 @@ export function renderDashboard(
   const tailCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Runner log tail" }),
+    h("h2", { text: "خروجی زنده لاگ رانر (Runner Log Tail)" }),
     h("p", {
       class: "card-note",
-      text: "Relayed from the node's heartbeat. GitHub only serves run logs after a run completes, so a live stream is not available from the API.",
+      text: "مخابره شده به صورت زنده از ضربان سلامت نود در گیت‌هاب اکشن.",
     }),
   );
   if (heartbeat && heartbeat.log_tail.length > 0) {
@@ -493,7 +493,7 @@ export function renderDashboard(
       ),
     );
   } else {
-    tailCard.append(h("p", { class: "empty-state", text: "No output relayed yet." }));
+    tailCard.append(h("p", { class: "empty-state", text: "هنوز خروجی لاگی مخابره نشده است." }));
   }
 
   panel.append(countdownCard, tunnelCard, nodeCard, ledgerCard, tailCard);
@@ -516,7 +516,7 @@ export function renderSettings(
     owner: "",
     repo: "",
     workflow_file: "runner.yml",
-    cycle_minutes: 340,
+    cycle_minutes: 350,
     poll_seconds: 30,
     auto_lock_minutes: 15,
     workload_pattern: "",
@@ -530,18 +530,18 @@ export function renderSettings(
   const vaultCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Vault" }),
+    h("h2", { text: "خزانه امن محلی (Local Vault)" }),
     h("p", {
       class: "card-note",
-      text: "Credentials are sealed with Argon2id and AES-256-GCM, with the master key also wrapped by Windows DPAPI.",
+      text: "کلیدها و اطلاعات حساس شما با الگوریتم‌های فوق امنیتی Argon2id و AES-256-GCM رمزنگاری شده و توسط ماژول محافظتی ویندوز (DPAPI) فقط برای کاربر جاری در این رایانه نگهداری می‌شوند.",
     }),
   );
 
   vaultCard.append(
-    row("Status", vault?.exists ? (unlocked ? "unlocked" : "locked") : "not created", unlocked ? "value-ok" : ""),
-    row("Envelope", vault?.format ?? "—"),
+    row("وضعیت خزانه (Status)", vault?.exists ? (unlocked ? "باز شده (unlocked)" : "قفل شده (locked)") : "ایجاد نشده (not created)", unlocked ? "value-ok" : ""),
+    row("قالب ساختار (Envelope)", vault?.format ?? "—"),
     row(
-      "KDF",
+      "مشتق‌سازی کلید (KDF)",
       vault?.kdf
         ? `Argon2id ${Math.round(vault.kdf.m_cost_kib / 1024)} MiB, t=${vault.kdf.t_cost}, p=${vault.kdf.p_cost}`
         : kdf
@@ -549,21 +549,21 @@ export function renderSettings(
           : "—",
     ),
     row(
-      "OS protection",
-      vault?.binding_label ?? "not present",
+      "محافظت سیستم‌عامل (OS Protection)",
+      vault?.binding_label ?? "موجود نیست",
       vault?.os_wrap ? "value-ok" : "value-warn",
     ),
     row(
-      "Swap protection",
-      vault?.swap_protection ? "pages pinned" : "unavailable on this platform",
+      "محافظت حافظه رم (Swap Protection)",
+      vault?.swap_protection ? "صفحات قفل در رم (pinned)" : "در دسترس نیست",
       vault?.swap_protection ? "value-ok" : "value-warn",
     ),
     row(
-      "Protector health",
+      "سلامت محافظ (Protector Health)",
       vault?.protector ?? "—",
       vault?.protector === "Healthy" ? "value-ok" : "value-warn",
     ),
-    row("Rotations", vault?.rotate_count ? String(vault.rotate_count) : "0"),
+    row("تعداد تغییر رمز (Rotations)", vault?.rotate_count ? String(vault.rotate_count) : "0"),
   );
 
   vaultCard.append(
@@ -571,7 +571,7 @@ export function renderSettings(
       class: "footer-note",
       id: "dpapi-caption",
       text:
-        "Windows DPAPI binds the key to your user profile, which protects against offline disk theft and other accounts on this machine. It is not TPM-bound, and it does not protect against malware already running as you.",
+        "قابلیت Windows DPAPI کلید رمزنگاری را به حساب کاربری فعلی شما متصل می‌کند که از سرقت فیزیکی اطلاعات هارد و دسترسی سایر کاربران ویندوز جلوگیری می‌کند.",
     }),
   );
 
@@ -581,18 +581,18 @@ export function renderSettings(
         type: "password",
         id: "unlock-passphrase",
         autocomplete: "current-password",
-        placeholder: "master passphrase",
+        placeholder: "گذرواژه اصلی خزانه (Master passphrase)",
       });
       vaultCard.append(
         h("div", { class: "divider" }),
-        h("label", { class: "field" }, h("span", { class: "field-label", text: "Unlock" }), unlockField),
+        h("label", { class: "field" }, h("span", { class: "field-label", text: "بازگشایی خزانه (Unlock)" }), unlockField),
         h(
           "div",
           { class: "button-row" },
           h("button", {
             class: "action primary",
             type: "button",
-            text: "Unlock",
+            text: "بازگشایی (Unlock)",
             onclick: () => {
               actions.onUnlock((unlockField as HTMLInputElement).value);
               (unlockField as HTMLInputElement).value = "";
@@ -601,7 +601,7 @@ export function renderSettings(
           h("button", {
             class: "action",
             type: "button",
-            text: "Unlock with Windows",
+            text: "بازگشایی با ویندوز (Unlock with Windows)",
             disabled: !vault.os_wrap,
             onclick: actions.onUnlockOs,
           }),
@@ -613,13 +613,13 @@ export function renderSettings(
         h(
           "div",
           { class: "button-row" },
-          h("button", { class: "action", type: "button", text: "Lock now", onclick: actions.onLock }),
-          h("button", { class: "action", type: "button", text: "Re-calibrate KDF", onclick: actions.onCalibrate }),
+          h("button", { class: "action", type: "button", text: "قفل کردن فوری (Lock now)", onclick: actions.onLock }),
+          h("button", { class: "action", type: "button", text: "کالیبراسیون KDF (Re-calibrate)", onclick: actions.onCalibrate }),
           vault?.tamper_strikes
             ? h("button", {
                 class: "action",
                 type: "button",
-                text: "Clear integrity alerts",
+                text: "پاک کردن هشدارها (Clear alerts)",
                 onclick: actions.onClearAlerts,
               })
             : null,
@@ -631,24 +631,24 @@ export function renderSettings(
       type: "password",
       id: "init-passphrase",
       autocomplete: "new-password",
-      placeholder: "at least 12 characters, mixed classes",
+      placeholder: "حداقل ۱۲ کاراکتر ترکیبی",
     });
     vaultCard.append(
       h("div", { class: "divider" }),
-      h("label", { class: "field" }, h("span", { class: "field-label", text: "Create vault" }), newPass),
+      h("label", { class: "field" }, h("span", { class: "field-label", text: "ایجاد خزانه‌ی جدید (Create Vault)" }), newPass),
       h(
         "div",
         { class: "button-row" },
         h("button", {
           class: "action primary",
           type: "button",
-          text: "Create vault",
+          text: "ایجاد خزانه (Create vault)",
           onclick: () => {
             actions.onInitVault((newPass as HTMLInputElement).value);
             (newPass as HTMLInputElement).value = "";
           },
         }),
-        h("button", { class: "action", type: "button", text: "Measure KDF cost", onclick: actions.onCalibrate }),
+        h("button", { class: "action", type: "button", text: "سنجش سرعت و توان KDF", onclick: actions.onCalibrate }),
       ),
     );
   }
@@ -657,10 +657,10 @@ export function renderSettings(
   const credCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Credentials" }),
+    h("h2", { text: "کلیدها و توکن‌های موردنیاز (Required Credentials)" }),
     h("p", {
       class: "card-note",
-      text: "Stored values can never be read back — not by this interface, and not by any command it can call. Only the name, timing and note are shown.",
+      text: "مقادیر وارد شده پس از ذخیره، برای حفظ امنیت به هیچ وجه روی صفحه نمایش داده نمی‌شوند و مستقیم در خزانه رمزنگاری می‌شوند. فقط نام کلید، زمان و یادداشت ثبت می‌گردد.",
     }),
   );
 
@@ -671,7 +671,7 @@ export function renderSettings(
       h(
         "thead",
         {},
-        h("tr", {}, h("th", { text: "Name" }), h("th", { text: "Updated" }), h("th", { text: "Note" }), h("th", { text: "" })),
+        h("tr", {}, h("th", { text: "نام کلید (Name)" }), h("th", { text: "آخرین ویرایش (Updated)" }), h("th", { text: "یادداشت (Note)" }), h("th", { text: "عملیات" })),
       ),
     );
     const body = h("tbody", {});
@@ -689,7 +689,7 @@ export function renderSettings(
             h("button", {
               class: "action ghost",
               type: "button",
-              text: "Delete",
+              text: "حذف (Delete)",
               disabled: !unlocked,
               onclick: () => actions.onDeleteSecret(secret.name),
             }),
@@ -700,7 +700,7 @@ export function renderSettings(
     table.append(body);
     credCard.append(table);
   } else {
-    credCard.append(h("p", { class: "empty-state", text: "No credentials stored yet." }));
+    credCard.append(h("p", { class: "empty-state", text: "هنوز کلیدی در خزانه ذخیره نشده است." }));
   }
 
   // One entry row per expected secret, so the required set is discoverable
@@ -708,8 +708,8 @@ export function renderSettings(
   credCard.append(h("div", { class: "divider" }));
   for (const requirement of REQUIRED_SECRETS) {
     const valueInput = requirement.multiline
-      ? h("textarea", { id: `secret-value-${requirement.name}`, placeholder: "paste the JSON key file contents" })
-      : h("input", { type: "password", id: `secret-value-${requirement.name}`, placeholder: "paste the value" });
+      ? h("textarea", { id: `secret-value-${requirement.name}`, placeholder: "محتوای فایل کلید JSON حساب سرویس گوگل را اینجا Paste کنید" })
+      : h("input", { type: "password", id: `secret-value-${requirement.name}`, placeholder: "مقدار توکن را اینجا Paste کنید" });
 
     credCard.append(
       h(
@@ -729,7 +729,7 @@ export function renderSettings(
       h("button", {
         class: "action",
         type: "button",
-        text: "Save to vault",
+        text: "ذخیره در خزانه (Save to vault)",
         disabled: !unlocked,
         onclick: () => {
           const field = document.getElementById(`secret-value-${requirement.name}`) as
@@ -769,7 +769,7 @@ export function renderSettings(
         h("button", {
           class: "action",
           type: "button",
-          text: "Choose file…",
+          text: "انتخاب فایل JSON… (Choose file)",
           onclick: () => fileInput.click(),
         }),
       );
@@ -783,25 +783,25 @@ export function renderSettings(
     const rotateField = h("input", {
       type: "password",
       id: "rotate-current",
-      placeholder: "current passphrase",
+      placeholder: "گذرواژه فعلی (Current passphrase)",
     });
-    const newField = h("input", { type: "password", id: "rotate-new", placeholder: "new passphrase" });
+    const newField = h("input", { type: "password", id: "rotate-new", placeholder: "گذرواژه جدید (New passphrase)" });
     credCard.append(
       h("div", { class: "divider" }),
-      h("h3", { text: "Rotate the master passphrase" }),
+      h("h3", { text: "تغییر گذرواژه اصلی خزانه (Rotate Master Passphrase)" }),
       h("p", {
         class: "card-note",
-        text: "Requires the current passphrase, not merely an unlocked session, so a stolen unlocked laptop cannot lock you out.",
+        text: "تغییر رمز نیازمند وارد کردن گذرواژه فعلی است تا از قفل شدن ناخواسته توسط افراد غیرمجاز جلوگیری شود.",
       }),
-      h("label", { class: "field" }, h("span", { class: "field-label", text: "Current" }), rotateField),
-      h("label", { class: "field" }, h("span", { class: "field-label", text: "New" }), newField),
+      h("label", { class: "field" }, h("span", { class: "field-label", text: "گذرواژه فعلی (Current)" }), rotateField),
+      h("label", { class: "field" }, h("span", { class: "field-label", text: "گذرواژه جدید (New)" }), newField),
       h(
         "div",
         { class: "button-row" },
         h("button", {
           class: "action",
           type: "button",
-          text: "Rotate",
+          text: "تغییر و ثبت رمز جدید (Rotate)",
           onclick: () => {
             actions.onRotate(
               (rotateField as HTMLInputElement).value,
@@ -813,16 +813,16 @@ export function renderSettings(
         }),
       ),
       h("div", { class: "divider" }),
-      h("h3", { class: "danger-text", text: "Destroy the vault" }),
+      h("h3", { class: "danger-text", text: "حذف و نابودی کامل خزانه (Destroy Vault)" }),
       h("p", {
         class: "card-note",
-        text: "Crypto-erase: deleting the wrapped key makes the ciphertext unrecoverable. Requires the passphrase.",
+        text: "عملیات پاکسازی غیرقابل بازگشت: با حذف کلید محافظ، تمام اطلاعات رمزنگاری‌شده بلافاصله نابود و غیرقابل بازیابی می‌شوند.",
       }),
       (() => {
         const destroyField = h("input", {
           type: "password",
           id: "destroy-passphrase",
-          placeholder: "passphrase, to confirm",
+          placeholder: "جهت تأیید نهایی، گذرواژه را وارد کنید",
         });
         return h("div", {},
           destroyField,
@@ -830,7 +830,7 @@ export function renderSettings(
             h("button", {
               class: "action danger",
               type: "button",
-              text: "Destroy vault",
+              text: "نابودی همیشگی خزانه (Destroy vault)",
               onclick: () => {
                 actions.onDestroy((destroyField as HTMLInputElement).value);
                 (destroyField as HTMLInputElement).value = "";
@@ -855,24 +855,24 @@ export function renderSettings(
   const repoCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Repository and cycle" }),
+    h("h2", { text: "تنظیمات مخزن و چرخه اکشن (Repository & Cycle Settings)" }),
     h("p", {
       class: "card-note",
-      text: "All nodes share one repository. The predecessor dispatches the successor into the idle slot, so no new repository is ever created.",
+      text: "تمامی نودها و هاستینگ روی این مخزن مشترک اجرا می‌شوند. جاب فعلی پیش از اتمام، جاب بعدی را در اسلات آماده فراخوانی می‌کند تا هاستینگ پیوسته و بدون وقفه ادامه یابد.",
     }),
     h(
       "div",
       { class: "field-grid" },
-      field("cfg-owner", "Owner", cfg.owner),
-      field("cfg-repo", "Repository", cfg.repo),
-      field("cfg-workflow", "Workflow file", cfg.workflow_file, "path under .github/workflows"),
-      field("cfg-cycle", "Cycle length (minutes)", cfg.cycle_minutes, "must stay at or below 340", "number"),
-      field("cfg-poll", "Poll interval (seconds)", cfg.poll_seconds, "10 or more", "number"),
-      field("cfg-lock", "Auto-lock after (minutes)", cfg.auto_lock_minutes, "cannot be disabled", "number"),
-      field("cfg-workload", "Workload match pattern", cfg.workload_pattern, "passed to pkill -STOP before snapshotting"),
-      field("cfg-tunnel", "Tunnel hostname", cfg.tunnel_hostname, "the static Cloudflare endpoint"),
-      field("cfg-folder", "Drive folder id", cfg.drive_folder_id, "shared with the service account"),
-      field("cfg-retention", "Backup retention", cfg.backup_retention, "rolling window of snapshots", "number"),
+      field("cfg-owner", "مالک مخزن گیت‌هاب (GitHub Owner)", cfg.owner, "نام کاربری یا سازمان در گیت‌هاب (مثال: alirezapiri0)"),
+      field("cfg-repo", "نام مخزن گیت‌هاب (Repository Name)", cfg.repo, "نام ریپازیتوری که ورک‌فلو در آن قرار دارد (مثال: node-runner)"),
+      field("cfg-workflow", "نام فایل ورک‌فلو (Workflow File)", cfg.workflow_file, "مسیر فایل ورک‌فلو در پوشه .github/workflows (پیش‌فرض runner.yml)"),
+      field("cfg-cycle", "مدت زمان هر چرخه به دقیقه (Cycle Length)", cfg.cycle_minutes, "مدت زمان اجرای هر جاب؛ حداکثر ۳۵۰ دقیقه (برای سقف ۶ ساعته اکشن)", "number"),
+      field("cfg-poll", "فاصله استعلام وضعیت به ثانیه (Poll Interval)", cfg.poll_seconds, "بررسی سلامت جاب از گیت‌هاب (حداقل ۱۰ ثانیه، پیش‌فرض ۳۰)", "number"),
+      field("cfg-lock", "قفل خودکار خزانه به دقیقه (Auto-lock Minutes)", cfg.auto_lock_minutes, "مدت زمان عدم فعالیت تا قفل شدن مجدد خزانه امن", "number"),
+      field("cfg-workload", "الگوی پروسس هاستینگ (Workload Pattern)", cfg.workload_pattern, "نام پروسس یا برنامه‌ای که قبل از اسنپ‌شات موقتاً فریز می‌شود (اختیاری)"),
+      field("cfg-tunnel", "دامنه تانل کلودفلر (Tunnel Hostname)", cfg.tunnel_hostname, "آدرس دامنه پایدار ثبت شده (مثال: node.yourdomain.com)"),
+      field("cfg-folder", "شناسه پوشه گوگل درایو (Drive Folder ID)", cfg.drive_folder_id, "آیدی پوشه اشتراک‌گذاری شده در گوگل درایو جهت نگهداری دائمی بکاپ‌ها"),
+      field("cfg-retention", "تعداد بکاپ‌های نگهداری‌شده (Backup Retention)", cfg.backup_retention, "تعداد آخرین اسنپ‌شات‌های حفظ شده در درایو (پیش‌فرض ۲۰)", "number"),
     ),
     h(
       "div",
@@ -880,7 +880,7 @@ export function renderSettings(
       h("button", {
         class: "action primary",
         type: "button",
-        text: "Save settings",
+        text: "ذخیره تنظیمات (Save settings)",
         onclick: () => {
           const read = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.value ?? "";
           const readNumber = (id: string, fallback: number) => {
@@ -891,7 +891,7 @@ export function renderSettings(
             owner: read("cfg-owner").trim(),
             repo: read("cfg-repo").trim(),
             workflow_file: read("cfg-workflow").trim() || "runner.yml",
-            cycle_minutes: readNumber("cfg-cycle", 340),
+            cycle_minutes: readNumber("cfg-cycle", 350),
             poll_seconds: readNumber("cfg-poll", 30),
             auto_lock_minutes: readNumber("cfg-lock", 15),
             workload_pattern: read("cfg-workload").trim(),
@@ -904,14 +904,14 @@ export function renderSettings(
       h("button", {
         class: "action",
         type: "button",
-        text: "Inject credentials into the repository",
+        text: "تزریق کلیدها به سکرت‌های مخزن گیت‌هاب (Inject credentials)",
         disabled: !unlocked,
         onclick: actions.onInjectSecrets,
       }),
     ),
     h("p", {
       class: "footer-note",
-      text: "Injection seals each credential to the repository's public key (libsodium sealed boxes) and uploads it. GitHub secrets are write-only: the write being accepted is the only confirmation available, and the vault remains the sole readable copy.",
+      text: "با زدن دکمه تزریق، کلیدهای ذخیره شده در خزانه با کلید عمومی مخزن گیت‌هاب رمزنگاری شده و مستقیماً به سکرت‌های اکشن ارسال می‌شوند تا جاب‌ها بدون نیاز به ورود دستی، از آن‌ها استفاده کنند.",
     }),
   );
 
@@ -919,13 +919,13 @@ export function renderSettings(
   const infoCard = h(
     "div",
     { class: "card" },
-    h("h2", { text: "Diagnostics" }),
-    row("Application version", info?.version ?? "—"),
-    row("Data directory", info?.data_dir ?? "—"),
-    row("Vault file", info?.vault_path ?? "—"),
-    row("OS key protection", info?.os_protection ? "available" : "unavailable", info?.os_protection ? "value-ok" : "value-warn"),
-    row("Swap protection", info?.swap_protection ? "available" : "unavailable", info?.swap_protection ? "value-ok" : "value-warn"),
-    row("Protector probe", info?.protector_status ?? "—"),
+    h("h2", { text: "عیب‌یابی و وضعیت سیستم (Diagnostics)" }),
+    row("نسخه برنامه (Application version)", info?.version ?? "—"),
+    row("مسیر پوشه داده‌ها (Data directory)", info?.data_dir ?? "—"),
+    row("مسیر فایل خزانه (Vault file)", info?.vault_path ?? "—"),
+    row("محافظت کلید ویندوز (OS key protection)", info?.os_protection ? "فعال (available)" : "غیرفعال (unavailable)", info?.os_protection ? "value-ok" : "value-warn"),
+    row("محافظت رم (Swap protection)", info?.swap_protection ? "فعال (available)" : "غیرفعال (unavailable)", info?.swap_protection ? "value-ok" : "value-warn"),
+    row("تست ماژول محافظ (Protector probe)", info?.protector_status ?? "—"),
   );
 
   wrap.append(vaultCard, credCard, repoCard, infoCard);
@@ -945,7 +945,7 @@ export function renderLogs(
   const searchInput = h("input", {
     type: "text",
     id: "log-search",
-    placeholder: "filter",
+    placeholder: "جستجو و فیلتر لاگ‌ها (Filter)...",
     value: needle,
   }) as HTMLInputElement;
   searchInput.addEventListener("input", () => actions.onSearch(searchInput.value));
@@ -956,12 +956,12 @@ export function renderLogs(
     h("button", {
       class: paused ? "action primary" : "action",
       type: "button",
-      text: paused ? "Resume" : "Pause",
+      text: paused ? "ادامه (Resume)" : "توقف موقت (Pause)",
       onclick: actions.onTogglePause,
     }),
     searchInput,
-    h("button", { class: "action", type: "button", text: "Copy", onclick: actions.onCopy }),
-    h("button", { class: "action ghost", type: "button", text: "Clear", onclick: actions.onClear }),
+    h("button", { class: "action", type: "button", text: "کپی لاگ‌ها (Copy)", onclick: actions.onCopy }),
+    h("button", { class: "action ghost", type: "button", text: "پاک کردن (Clear)", onclick: actions.onClear }),
   );
 
   const view = h("div", { class: "log-view", id: "log-view" });
@@ -987,7 +987,7 @@ export function renderLogs(
   }
 
   if (lines.length === 0) {
-    view.append(h("p", { class: "empty-state", text: "No log output yet." }));
+    view.append(h("p", { class: "empty-state", text: "هنوز گزارش لاگی ثبت نشده است." }));
   }
 
   return h(
@@ -996,7 +996,7 @@ export function renderLogs(
     toolbar,
     h("p", {
       class: "card-note",
-      text: "Local application log: vault events, polling failures and handover actions. The node's own output appears on the dashboard once it relays a heartbeat.",
+      text: "گزارش لاگ نرم‌افزار: وقایع خزانه‌ی امن، وضعیت استعلام و رویدادهای انتقال جاب‌ها. خروجی لاگ زنده‌ی خود نود نیز در تب داشبورد نمایش داده می‌شود.",
     }),
     view,
   );

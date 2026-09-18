@@ -50,8 +50,10 @@ dispatch_successor() {
   local commit="$1"
   local next_slot
   next_slot=$(successor_slot)
+  local target_ref="${TARGET_REF:-main}"
+  [[ -z "$target_ref" ]] && target_ref="main"
 
-  log "handing over to slot '${next_slot}' at commit ${commit}"
+  log "handing over to slot '${next_slot}' at commit ${commit} on ref '${target_ref}'"
 
   local body
   body=$(jq -n \
@@ -59,21 +61,30 @@ dispatch_successor() {
     --arg commit "$commit" \
     --arg reason "${NODE_REASON:-cycle}" \
     --arg origin "${GITHUB_RUN_ID:-0}" \
-    '{ref:null, inputs:{slot:$slot, commit:$commit, reason:$reason, origin_run:$origin}}' \
-    | jq --arg ref "$TARGET_REF" '.ref = $ref')
+    --arg ref "$target_ref" \
+    '{ref:$ref, inputs:{slot:$slot, commit:$commit, reason:$reason, origin_run:$origin}}')
 
-  # The run URL and the response body are logged; the PAT is not, because
-  # gh_api feeds it to curl on stdin rather than through `argv`.
-  if ! gh_api POST "/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches" "$body" \
-      >"${PIPE_DIR}/dispatch.out" 2>"${PIPE_DIR}/dispatch.err"; then
+  local attempts=5
+  local delay=3
+  local n=0
+  while (( n < attempts )); do
+    n=$((n + 1))
+    if gh_api POST "/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches" "$body" \
+        >"${PIPE_DIR}/dispatch.out" 2>"${PIPE_DIR}/dispatch.err"; then
+      log "successor dispatched (slot ${next_slot}); awaiting acknowledgement"
+      return 0
+    fi
     local detail
-    detail=$(tr -d '\r' <"${PIPE_DIR}/dispatch.err" | tail -n 3)
-    warn "workflow dispatch failed: ${detail}"
-    return 1
-  fi
+    detail=$(tr -d '\r' <"${PIPE_DIR}/dispatch.err" 2>/dev/null | tail -n 3)
+    warn "dispatch attempt ${n}/${attempts} failed: ${detail}"
+    if (( n < attempts )); then
+      sleep "$delay"
+      delay=$((delay * 2))
+    fi
+  done
 
-  log "successor dispatched (slot ${next_slot}); awaiting acknowledgement"
-  return 0
+  warn "could not dispatch successor after ${attempts} attempts"
+  return 1
 }
 
 # Wait for the successor to confirm it has restored the commit we just

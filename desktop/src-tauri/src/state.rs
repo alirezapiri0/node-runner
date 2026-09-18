@@ -22,7 +22,7 @@ use zeroize::Zeroizing;
 
 use crate::gh::api::GithubClient;
 
-pub const DEFAULT_CYCLE_MINUTES: u64 = 340;
+pub const DEFAULT_CYCLE_MINUTES: u64 = 350;
 pub const DEFAULT_POLL_SECONDS: u64 = 30;
 pub const DEFAULT_AUTO_LOCK_MINUTES: u64 = 15;
 pub const LOG_CAPACITY: usize = 500;
@@ -78,9 +78,9 @@ impl Config {
         if self.cycle_minutes < 10 {
             return Err("cycle must be at least 10 minutes".into());
         }
-        if self.cycle_minutes > DEFAULT_CYCLE_MINUTES {
+        if self.cycle_minutes > 355 {
             return Err(format!(
-                "cycle must be at most {DEFAULT_CYCLE_MINUTES} minutes: GitHub kills a job at 360, \
+                "cycle must be at most 355 minutes: GitHub kills a job at 360, \
                  and the handover needs the remaining margin"
             ));
         }

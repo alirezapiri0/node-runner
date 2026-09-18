@@ -99,23 +99,22 @@ emergency_handover() {
   thaw_workload >/dev/null 2>&1 || true
   heartbeat_write "failed" 0 0 "$LAST_GOOD_COMMIT" >/dev/null 2>&1 || true
 
-  if [[ -z "$LAST_GOOD_COMMIT" ]]; then
-    # Nothing has ever been committed, so there is no state for a successor to
-    # restore and starting one would just repeat this failure on a fresh billing
-    # hour. Fail visibly instead.
-    warn "no known-good commit to hand over; leaving the node stopped"
-    warn "check the ledger and the run log before starting a new node"
-    drain_node "" "emergency-no-state" >/dev/null 2>&1 || true
-    return "$exit_code"
-  fi
-
   if ! killswitch_engaged; then
-    if dispatch_successor "$LAST_GOOD_COMMIT" >/dev/null 2>&1; then
-      log "successor dispatched for the last known-good commit ${LAST_GOOD_COMMIT}"
-      wait_for_ack "$LAST_GOOD_COMMIT" >/dev/null 2>&1 \
-        || warn "successor did not acknowledge within ${ACK_TIMEOUT_SECONDS}s"
+    local handover_commit="${LAST_GOOD_COMMIT:-}"
+    local handover_reason="emergency"
+    if [[ -z "$handover_commit" ]]; then
+      handover_reason="failover"
+      warn "no committed snapshot yet; dispatching successor with failover to keep hosting alive"
+    fi
+    NODE_REASON="$handover_reason"
+    if dispatch_successor "$handover_commit"; then
+      log "successor dispatched (reason ${handover_reason}, commit '${handover_commit}')"
+      if [[ -n "$handover_commit" ]]; then
+        wait_for_ack "$handover_commit" >/dev/null 2>&1 \
+          || warn "successor did not acknowledge within ${ACK_TIMEOUT_SECONDS}s"
+      fi
     else
-      warn "could not dispatch a successor; the node will stop"
+      warn "could not dispatch a successor"
     fi
   else
     log "kill switch engaged; not dispatching a successor"
@@ -126,6 +125,8 @@ emergency_handover() {
 }
 
 trap 'emergency_handover' EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 
 # --- phases ----------------------------------------------------------------
 
