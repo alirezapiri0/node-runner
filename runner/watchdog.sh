@@ -72,6 +72,8 @@ dispatch_node() {
   local target_ref="${TARGET_REF:-main}"
   [[ -z "$target_ref" ]] && target_ref="main"
 
+  log "dispatching a node (slot ${next_slot}, reason ${reason}): ${detail}"
+
   local body
   body=$(jq -n \
     --arg slot "$next_slot" \
