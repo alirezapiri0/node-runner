@@ -79,9 +79,11 @@ impl Config {
             return Err("cycle must be at least 10 minutes".into());
         }
         if self.cycle_minutes > 355 {
-            return Err("cycle must be at most 355 minutes: GitHub kills a job at 360, \
+            return Err(
+                "cycle must be at most 355 minutes: GitHub kills a job at 360, \
                  and the handover needs the remaining margin"
-                .into());
+                    .into(),
+            );
         }
         if self.poll_seconds < 10 {
             return Err("poll interval must be at least 10 seconds".into());
