@@ -44,6 +44,16 @@ on:
         required: false
         default: ""
         type: string
+      cycle_minutes:
+        description: Override cycle minutes for testing (e.g. 4)
+        required: false
+        default: "350"
+        type: string
+      freeze_at_minutes:
+        description: Override freeze minute for testing (e.g. 2)
+        required: false
+        default: "340"
+        type: string
   schedule:
     # Watchdog only; the `node` job checks the event name and skips.
     - cron: "*/30 * * * *"
@@ -57,8 +67,8 @@ env:
   # Kept in one place so the runner scripts and this workflow cannot disagree.
   DRIVE_REMOTE: gdrive
   WORK_DIR: /home/runner/work_data
-  CYCLE_MINUTES: "350"
-  FREEZE_AT_MINUTES: "340"
+  CYCLE_MINUTES: ${{ inputs.cycle_minutes || '350' }}
+  FREEZE_AT_MINUTES: ${{ inputs.freeze_at_minutes || '340' }}
   BACKUP_RETENTION: "20"
   ACK_TIMEOUT_SECONDS: "300"
   LEASE_STALE_SECONDS: "900"
@@ -85,8 +95,11 @@ jobs:
       # block of another user's process is not.
       GH_PAT: ${{ secrets.GH_PAT }}
       RCLONE_SERVICE_ACCOUNT_JSON: ${{ secrets.RCLONE_SERVICE_ACCOUNT_JSON }}
+      RCLONE_DRIVE_TOKEN: ${{ secrets.RCLONE_DRIVE_TOKEN }}
+      RCLONE_DRIVE_CLIENT_ID: ${{ secrets.RCLONE_DRIVE_CLIENT_ID }}
+      RCLONE_DRIVE_CLIENT_SECRET: ${{ secrets.RCLONE_DRIVE_CLIENT_SECRET }}
       CF_TUNNEL_TOKEN: ${{ secrets.CF_TUNNEL_TOKEN }}
-      GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID }}
+      GDRIVE_ROOT_FOLDER_ID: ${{ secrets.GDRIVE_ROOT_FOLDER_ID || vars.GDRIVE_ROOT_FOLDER_ID }}
       WORKLOAD_PATTERN: ${{ vars.WORKLOAD_PATTERN }}
 
     steps:
@@ -121,7 +134,10 @@ jobs:
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
       RCLONE_SERVICE_ACCOUNT_JSON: ${{ secrets.RCLONE_SERVICE_ACCOUNT_JSON }}
-      GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID }}
+      RCLONE_DRIVE_TOKEN: ${{ secrets.RCLONE_DRIVE_TOKEN }}
+      RCLONE_DRIVE_CLIENT_ID: ${{ secrets.RCLONE_DRIVE_CLIENT_ID }}
+      RCLONE_DRIVE_CLIENT_SECRET: ${{ secrets.RCLONE_DRIVE_CLIENT_SECRET }}
+      GDRIVE_ROOT_FOLDER_ID: ${{ secrets.GDRIVE_ROOT_FOLDER_ID || vars.GDRIVE_ROOT_FOLDER_ID }}
 
     steps:
       - uses: actions/checkout@v4

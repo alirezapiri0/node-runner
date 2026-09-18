@@ -125,19 +125,12 @@ retry() {
 # that would otherwise hold a credential path and would need shreading at the
 # end of every cycle.
 rclone_configure() {
-  [[ -n "${RCLONE_SERVICE_ACCOUNT_JSON:-}" ]] || die "RCLONE_SERVICE_ACCOUNT_JSON is not set"
-
   mkdir -p "$PIPE_DIR"
   umask 077
-  printf '%s' "$RCLONE_SERVICE_ACCOUNT_JSON" >"$SA_FILE"
-  chmod 600 "$SA_FILE"
 
   export RCLONE_CONFIG="${PIPE_DIR}/rclone.conf"
   export RCLONE_CONFIG_GDRIVE_TYPE="drive"
   export RCLONE_CONFIG_GDRIVE_SCOPE="drive"
-  export RCLONE_CONFIG_GDRIVE_SERVICE_ACCOUNT_FILE="$SA_FILE"
-  # Uploads are not resumable across a job restart, so fail fast rather than
-  # hanging: this is what the `--timeout`/`--contimeout` pair below achieves.
   export RCLONE_CONFIG_GDRIVE_ROOT_FOLDER_ID="${GDRIVE_ROOT_FOLDER_ID:-}"
   export RCLONE_DRIVE_CHUNK_SIZE="64M"
   export RCLONE_TRANSFERS="8"
@@ -150,18 +143,32 @@ rclone_configure() {
   export RCLONE_STATS="15s"
   export RCLONE_LOG_LEVEL="INFO"
   export RCLONE_USE_JSON_LOG="false"
+
+  if [[ -n "${RCLONE_DRIVE_TOKEN:-}" ]]; then
+    export RCLONE_CONFIG_GDRIVE_TOKEN="$RCLONE_DRIVE_TOKEN"
+    export RCLONE_CONFIG_GDRIVE_CLIENT_ID="${RCLONE_DRIVE_CLIENT_ID:-}"
+    export RCLONE_CONFIG_GDRIVE_CLIENT_SECRET="${RCLONE_DRIVE_CLIENT_SECRET:-}"
+    log "rclone configured with User OAuth credentials"
+  elif [[ -n "${RCLONE_SERVICE_ACCOUNT_JSON:-}" ]]; then
+    printf '%s' "$RCLONE_SERVICE_ACCOUNT_JSON" >"$SA_FILE"
+    chmod 600 "$SA_FILE"
+    export RCLONE_CONFIG_GDRIVE_SERVICE_ACCOUNT_FILE="$SA_FILE"
+    log "rclone configured with Service Account JSON"
+  else
+    die "Neither RCLONE_DRIVE_TOKEN nor RCLONE_SERVICE_ACCOUNT_JSON is set"
+  fi
 }
 
 # Preflight the credential before anything is written. Failing here costs
 # seconds; failing at the upload costs the cycle.
 rclone_preflight() {
-  log "checking Drive access with the service account"
+  log "checking Drive access"
   if ! retry 3 rclone about "${DRIVE_REMOTE}:" >/dev/null 2>"${PIPE_DIR}/rclone-about.err"; then
     local detail
     detail=$(tr -d '\r' <"${PIPE_DIR}/rclone-about.err" | tail -n 5)
     # The overwhelmingly common cause is that the target folder was never shared
     # with the service account, so say that rather than echoing a raw 404.
-    die "cannot use the Drive remote. Most often this means the backup folder has not been shared with the service account (${detail})"
+    die "cannot use the Drive remote. Most often this means the backup folder has not been shared or authenticated correctly (${detail})"
   fi
 }
 
@@ -173,7 +180,7 @@ scrub_credentials() {
   rm -f "${PIPE_DIR}/rclone.conf" 2>/dev/null || true
   # Secrets are unset from this process's environment so that any later command,
   # including one in an error trap, cannot inherit them.
-  unset RCLONE_SERVICE_ACCOUNT_JSON CF_TUNNEL_TOKEN GH_PAT 2>/dev/null || true
+  unset RCLONE_SERVICE_ACCOUNT_JSON RCLONE_DRIVE_TOKEN RCLONE_DRIVE_CLIENT_ID RCLONE_DRIVE_CLIENT_SECRET CF_TUNNEL_TOKEN GH_PAT 2>/dev/null || true
 }
 
 # --- Unix time -------------------------------------------------------------
