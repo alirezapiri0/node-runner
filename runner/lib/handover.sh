@@ -62,7 +62,9 @@ dispatch_successor() {
     --arg reason "${NODE_REASON:-cycle}" \
     --arg origin "${GITHUB_RUN_ID:-0}" \
     --arg ref "$target_ref" \
-    '{ref:$ref, inputs:{slot:$slot, commit:$commit, reason:$reason, origin_run:$origin}}')
+    --arg cycle "${CYCLE_MINUTES:-350}" \
+    --arg freeze "${FREEZE_AT_MINUTES:-340}" \
+    '{ref:$ref, inputs:{slot:$slot, commit:$commit, reason:$reason, origin_run:$origin, cycle_minutes:$cycle, freeze_at_minutes:$freeze}}')
 
   local attempts=5
   local delay=3
